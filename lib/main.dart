@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod_app/model.dart';
+import 'package:riverpod_app/buisness_logic/model.dart';
 
 void main() {
   runApp(
@@ -10,14 +10,9 @@ void main() {
   );
 }
 
-//creating a provider for the category class
-final categoryProvider = ChangeNotifierProvider((ref) => Category(
-      ActivityConnectUID: '1',
-      activityList: [],
-      createdOn: DateTime.now(),
-      isCountBased: true,
-      name: 'Study',
-    ));
+//creating an instance of the parent class
+
+final parentProvider = ChangeNotifierProvider((ref) => Parent());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -36,56 +31,46 @@ class MyApp extends StatelessWidget {
   }
 }
 
-//creating consumer widget for category
+//creating consumer widget for the parent provider
+
 class CategoryConsumer extends ConsumerWidget {
   const CategoryConsumer({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final category = ref.watch(categoryProvider);
+    final parent = ref.watch(parentProvider);
     return Scaffold(
       appBar: AppBar(
-        shadowColor: Colors.black,
-        title: Text(category.name),
-        elevation: 4,
+        title: const Text('Riverpod Demo'),
       ),
-      body: ListView.builder(
-        itemCount: category.activityList.length,
-        itemBuilder: (context, index) {
-          final activity = category.activityList[index];
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ListTile(
-              shape: RoundedRectangleBorder(
-                side: BorderSide(color: Colors.deepPurpleAccent, width: 2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              splashColor: Colors.deepPurpleAccent,
-              title: Text(activity.name),
-              subtitle: Text(activity.tags.join(', ')),
-              trailing: Text("Date: ${activity.createdOn.day}/${activity.createdOn.month}/${activity.createdOn.year}"), //display in form 28/1/2024
-              onTap: () {
-                //we should navigate to the activity screen using material route
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => ActivityConsumer(
-                      activity: activity,
-                    ),
-                  ),
+      body: Column(
+        children: [
+          const SizedBox(height: 20),
+          Text(
+            'this is all about parent: ${parent.categoryList.length}',
+            style: Theme.of(context).textTheme.headline6,
+          ),
+          const SizedBox(height: 20),
+          Expanded(
+            child: ListView.builder(
+              itemCount: parent.categoryList.length,
+              itemBuilder: (context, index) {
+                return CategoryConsumerWidget(
+                  category: parent.categoryList[index],
                 );
               },
             ),
-          );
-        },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          ref.read(categoryProvider.notifier).addToActivityList(
-                Activity(
-                  countMap: {},
+          ref.read(parentProvider.notifier).addToCategoryList(
+                Category(
+                  isCountBased: true,
+                  name: 'Category Arooba: ${parent.categoryList.length + 1}',
+                  ActivityConnectUID: 'Activity ${parent.categoryList.length + 1}',
                   createdOn: DateTime.now(),
-                  name: 'Study ${category.activityList.length + 1}',
-                  tags: [],
                 ),
               );
         },
@@ -95,121 +80,107 @@ class CategoryConsumer extends ConsumerWidget {
   }
 }
 
-//creating a consumer statefull widget for activity recieved from the category consumer in order to modify the Activity object in the list of activities in the category class
-class ActivityConsumer extends ConsumerStatefulWidget {
-  final Activity activity;
+//creating consumer widget for the category provider
 
-  const ActivityConsumer({super.key, required this.activity});
+class CategoryConsumerWidget extends ConsumerWidget {
+  final Category category;
+
+  const CategoryConsumerWidget({super.key, required this.category});
 
   @override
-  _ActivityConsumerState createState() => _ActivityConsumerState();
-}
-
-class _ActivityConsumerState extends ConsumerState<ActivityConsumer> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.activity.name),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      margin: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
       ),
-      body: ListView.builder(
-        itemCount: widget.activity.countMap.length,
-        itemBuilder: (context, index) {
-          final date = widget.activity.countMap.keys.elementAt(index);
-          final count = widget.activity.countMap.values.elementAt(index);
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Card(
-              elevation: 20,
-              child: ListTile(
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(color: Colors.deepPurpleAccent, width: 2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                splashColor: Colors.deepPurpleAccent,
-                title: Text("Date: ${date.day}/${date.month}/${date.year}"),
-                subtitle: Text("Count: $count"),
-                onTap: () => {
-                  //navigate to the notes screen
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => NotesConsumer(
-                        activity: widget.activity,
-                      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Category Arroba: ${category.activityList.length}',
+            style: Theme.of(context).textTheme.headline6,
+          ),
+          const SizedBox(height: 20),
+          ListView.builder(
+            shrinkWrap: true,
+            itemCount: category.activityList.length,
+            itemBuilder: (context, index) {
+              return ActivityConsumerWidget(
+                activity: category.activityList[index],
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+          FloatingActionButton(
+            onPressed: () {
+              ref.read(parentProvider.notifier).addToCategoryList(
+                    Category(
+                      isCountBased: true,
+                      name: 'Category ${category.activityList.length + 1}',
+                      ActivityConnectUID: 'Activity ${category.activityList.length + 1}',
+                      createdOn: DateTime.now(),
                     ),
-                  ),
-                },
-              ),
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            widget.activity.addToCountMap(DateTime.now(), widget.activity.countMap.length + 1);
-          });
-
-          //find the activity instance in the list of the activities in the category class and update it
-          // ref.read(categoryProvider).activityList.firstWhere((element) => element.name == widget.activity.name).addToCountMap(DateTime.now(), widget.activity.countMap.length + 1);
-        },
-        child: const Icon(Icons.add),
+                  );
+            },
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
     );
   }
 }
 
-//consumer stateful widget for notes
+//creating consumer widget for the activity provider
 
-class NotesConsumer extends ConsumerStatefulWidget {
+class ActivityConsumerWidget extends ConsumerWidget {
   final Activity activity;
 
-  const NotesConsumer({super.key, required this.activity});
+  const ActivityConsumerWidget({super.key, required this.activity});
 
   @override
-  _NotesConsumerState createState() => _NotesConsumerState();
-}
-
-class _NotesConsumerState extends ConsumerState<NotesConsumer> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.activity.name),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      margin: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
       ),
-      body: ListView.builder(
-        itemCount: widget.activity.notes.length,
-        itemBuilder: (context, index) {
-          final note = widget.activity.notes[index];
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Card(
-              elevation: 20,
-              child: ListTile(
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(color: Colors.deepPurpleAccent, width: 2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                splashColor: Colors.deepPurpleAccent,
-                title: Text(note),
-                onTap: () => {
-                  //navigate to the notes screen
-                },
-              ),
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            widget.activity.notes.add('Note ${widget.activity.notes.length + 1}');
-          });
-
-          //find the activity instance in the list of the activities in the category class and update it
-          // ref.read(categoryProvider).activityList.firstWhere((element) => element.name == widget.activity.name).addToCountMap(DateTime.now(), widget.activity.countMap.length + 1);
-        },
-        child: const Icon(Icons.add),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Activity: ${activity.name}',
+            style: Theme.of(context).textTheme.headline6,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Tags: ${activity.tags.length}',
+            style: Theme.of(context).textTheme.subtitle1,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Count Map: ${activity.countMap.length}',
+            style: Theme.of(context).textTheme.subtitle1,
+          ),
+          const SizedBox(height: 20),
+          FloatingActionButton(
+            onPressed: () {
+              ref.read(parentProvider.notifier).addToCategoryList(
+                    Category(
+                      isCountBased: true,
+                      name: 'Category ${activity.countMap.length + 1}',
+                      ActivityConnectUID: 'Activity ${activity.countMap.length + 1}',
+                      createdOn: DateTime.now(),
+                    ),
+                  );
+            },
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
     );
   }
